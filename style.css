@@ -206,7 +206,7 @@ h1 { font-size: 1.2rem; margin: 0; }
   border-radius: 14px;
   overflow: hidden;
   border: 1px solid var(--border);
-  background: #0d1526;
+  background: var(--bg-card);
 }
 /* Absolutely positioned so the canvas's intrinsic size doesn't drive the flex
    height (otherwise it grows the page and forces scrolling). */
@@ -360,4 +360,33 @@ h1 { font-size: 1.2rem; margin: 0; }
     --border: #e3e7f1;
   }
   html, body { background: linear-gradient(180deg, #f5f7fb 0%, #eef1f9 100%); }
+}
+
+/* Explicit theme, set by JS (e.g. a `{type:"theme"}` postMessage from a
+   hosting hub app's iframe) — takes priority over the OS-level
+   prefers-color-scheme query above via the attribute selector's higher
+   specificity, regardless of source order. Falls back to that query when
+   no override is set (running standalone, outside any hub). */
+:root[data-theme="light"] {
+  --bg: #f5f7fb;
+  --bg-card: #ffffff;
+  --text: #131a2c;
+  --text-dim: #5b6478;
+  --border: #e3e7f1;
+}
+html[data-theme="light"], html[data-theme="light"] body {
+  background: linear-gradient(180deg, #f5f7fb 0%, #eef1f9 100%);
+}
+:root[data-theme="dark"] {
+  --bg: #0b1020;
+  --bg-card: #141b2e;
+  --text: #eef2ff;
+  --text-dim: #9aa5c0;
+  --accent: #4fd1c5;
+  --accent-2: #f6ad55;
+  --danger: #fc8181;
+  --border: #232c48;
+}
+html[data-theme="dark"], html[data-theme="dark"] body {
+  background: linear-gradient(180deg, #0b1020 0%, #0e1630 100%);
 }

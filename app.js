@@ -695,8 +695,18 @@ function runLiveScan() {
 
 // ---------- map ----------
 
+// An explicit light/dark override — set from a hosting hub app's postMessage
+// (see initThemeBridge) — takes priority over the OS-level prefers-color-scheme
+// query. null means "no override, follow the OS setting" (running standalone).
+let themeOverride = null;
+
+function isDarkMode() {
+  if (themeOverride) return themeOverride === "dark";
+  return !window.matchMedia || window.matchMedia("(prefers-color-scheme: dark)").matches;
+}
+
 function mapColors() {
-  const dark = !window.matchMedia || window.matchMedia("(prefers-color-scheme: dark)").matches;
+  const dark = isDarkMode();
   return dark
     ? { sea: "#0d1526", land: "#26324e", coast: "#46557d", aheadFill: "rgba(79,209,197,0.32)", aheadStroke: "#4fd1c5", path: "#f6ad55", user: "#f6ad55", userRing: "#0d1526", labelText: "#c8d3ef", labelAhead: "#eafff9", labelHalo: "rgba(5,10,20,0.85)", panelBg: "rgba(9,15,28,0.86)", labelStart: "#ffd9a8", seaLabel: "#93a6cc" }
     : { sea: "#cfe0f2", land: "#c2cde0", coast: "#8194b6", aheadFill: "rgba(47,184,171,0.35)", aheadStroke: "#2fb8ab", path: "#d9772a", user: "#d9772a", userRing: "#ffffff", labelText: "#2a3550", labelAhead: "#0f5f57", labelHalo: "rgba(255,255,255,0.88)", panelBg: "rgba(255,255,255,0.9)", labelStart: "#8a4b12", seaLabel: "#5a6b8f" };
@@ -1307,10 +1317,32 @@ function registerServiceWorker() {
   });
 }
 
+// ---------- theme bridge (hosting hub app) ----------
+
+// When embedded in the hub app's iframe, the hub posts {type:"theme",
+// value:"light"|"dark"} both right after the iframe loads and whenever its
+// own theme toggle is used — see benselby2a/hub's sendThemeToFrame(). Apply
+// it as an explicit override (via the data-theme attribute the CSS keys
+// off) and redraw the map's canvas-drawn colors, which CSS alone can't
+// reach. Running standalone (outside the hub), no such message ever
+// arrives, so the app keeps following the OS-level prefers-color-scheme
+// query as before.
+function initThemeBridge() {
+  window.addEventListener("message", (event) => {
+    const data = event.data;
+    if (!data || data.type !== "theme") return;
+    if (data.value !== "light" && data.value !== "dark") return;
+    themeOverride = data.value;
+    document.documentElement.setAttribute("data-theme", data.value);
+    drawMapNow(true);
+  });
+}
+
 // ---------- init ----------
 
 async function init() {
   registerServiceWorker();
+  initThemeBridge();
 
   // Traffic-light statuses: network reflects connectivity now; compass and
   // location stay idle (grey) until you enable the sensors.
